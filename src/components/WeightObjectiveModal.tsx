@@ -39,8 +39,6 @@ export const WeightObjectiveModal: React.FC<WeightObjectiveModalProps> = ({
   userProfile,
   onSaveObjective,
 }) => {
-  if (!isOpen) return null;
-
   const [unitSystem, setUnitSystem] = useState<'kg' | 'lbs'>('kg');
   const [currentWeightInput, setCurrentWeightInput] = useState<string>(userProfile.weightKg.toString());
   const initialTgt =
@@ -99,6 +97,27 @@ export const WeightObjectiveModal: React.FC<WeightObjectiveModalProps> = ({
   const [preserveMuscle, setPreserveMuscle] = useState<boolean>(
     userProfile.weightObjective?.preserveMuscleHighProtein !== false
   );
+
+  // Sync state when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setCurrentWeightInput(userProfile.weightKg.toString());
+      const tgt =
+        userProfile.weightObjective?.targetWeightKg ||
+        (userProfile.goalType === 'cut'
+          ? Math.round((userProfile.weightKg - 5) * 10) / 10
+          : userProfile.goalType === 'bulk'
+          ? Math.round((userProfile.weightKg + 4) * 10) / 10
+          : userProfile.weightKg);
+      setTargetWeightInput(tgt.toString());
+      setMode(userProfile.weightObjective?.mode || 'pace');
+      setPaceKgPerWeek(userProfile.weightObjective?.paceKgPerWeek || 0.5);
+      setTargetDate(userProfile.weightObjective?.targetDate || defaultFutureDate());
+      setPreserveMuscle(userProfile.weightObjective?.preserveMuscleHighProtein !== false);
+    }
+  }, [isOpen, userProfile]);
+
+  if (!isOpen) return null;
 
   // Compute live plan
   const bmr = calculateBMR(

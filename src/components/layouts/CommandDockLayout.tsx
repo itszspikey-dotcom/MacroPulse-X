@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   LayoutDashboard,
   BarChart3,
+  Calendar,
   Sparkles,
   BookOpen,
   Settings,
@@ -17,10 +18,13 @@ import {
   Droplets,
   RotateCcw,
   Flame,
+  Cloud,
 } from 'lucide-react';
 import { DailySummary, LoggedFood, MealType, UserProfile } from '../../types/nutrition';
 import { MealSection } from '../MealSection';
 import { MobileBottomNav } from '../MobileBottomNav';
+import { CloudSyncStatus } from '../../services/firebaseSyncService';
+import { User } from '../../lib/firebase';
 
 export interface TrackerLayoutProps {
   currentDate: string;
@@ -31,8 +35,8 @@ export interface TrackerLayoutProps {
   onSwitchProfile: (profile: UserProfile) => void;
   isOnline: boolean;
   pendingSyncCount: number;
-  activeTab: 'tracker' | 'analytics';
-  setActiveTab: (tab: 'tracker' | 'analytics') => void;
+  activeTab: 'tracker' | 'analytics' | 'planner';
+  setActiveTab: (tab: 'tracker' | 'analytics' | 'planner') => void;
   onOpenSearch: (mealType?: MealType) => void;
   onOpenBarcode: (mealType?: MealType) => void;
   onOpenAiScan: (mealType?: MealType) => void;
@@ -47,6 +51,10 @@ export interface TrackerLayoutProps {
   onOpenRecipeBuilder: () => void;
   onOpenDataManagement: () => void;
   onOpenSchemaModal: () => void;
+  onOpenFirebaseAuth?: () => void;
+  onOpenOnboarding?: () => void;
+  cloudSyncStatus?: CloudSyncStatus;
+  firebaseUser?: User | null;
   onAddWater: (amountMl: number) => void;
   onResetWater: () => void;
 }
@@ -212,6 +220,19 @@ export const CommandDockLayout: React.FC<TrackerLayoutProps> = (props) => {
           </button>
 
           <button
+            onClick={() => setActiveTab('planner')}
+            className={`flex items-center gap-3 p-2.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+              activeTab === 'planner'
+                ? 'bg-white/10 text-white border border-white/15'
+                : 'text-white/40 hover:text-amber-400 hover:bg-white/5'
+            }`}
+            title="Menu Planner"
+          >
+            <Calendar className="w-5 h-5 shrink-0 text-amber-400" />
+            {isDockExpanded && <span>PLANNER</span>}
+          </button>
+
+          <button
             onClick={() => setActiveTab('analytics')}
             className={`flex items-center gap-3 p-2.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
               activeTab === 'analytics'
@@ -279,6 +300,38 @@ export const CommandDockLayout: React.FC<TrackerLayoutProps> = (props) => {
           </button>
 
           <button
+            onClick={props.onOpenFirebaseAuth}
+            className="flex items-center gap-3 p-2.5 rounded-xl text-xs font-semibold text-white/40 hover:text-blue-300 hover:bg-white/5 transition cursor-pointer"
+            title="Firebase Cloud Sync & Auth"
+          >
+            <div className="relative">
+              <Cloud className="w-5 h-5 shrink-0 text-blue-400" />
+              <span className={`absolute -top-1 -right-1 w-2 h-2 rounded-full ${
+                props.cloudSyncStatus === 'synced' ? 'bg-emerald-400' :
+                props.cloudSyncStatus === 'syncing' ? 'bg-[#facc15] animate-ping' :
+                props.cloudSyncStatus === 'offline' ? 'bg-rose-500' : 'bg-white/30'
+              }`} />
+            </div>
+            {isDockExpanded && (
+              <div className="flex items-center justify-between flex-1">
+                <span>CLOUD CLUSTER</span>
+                <span className="text-[9px] font-mono-meta px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300">
+                  {props.cloudSyncStatus === 'synced' ? 'SYNCED' : props.cloudSyncStatus === 'syncing' ? 'SYNC' : 'GUEST'}
+                </span>
+              </div>
+            )}
+          </button>
+
+          <button
+            onClick={props.onOpenOnboarding}
+            className="flex items-center gap-3 p-2.5 rounded-xl text-xs font-semibold text-white/40 hover:text-amber-300 hover:bg-white/5 transition cursor-pointer"
+            title="Recalibrate Biometric Goals"
+          >
+            <Sparkles className="w-5 h-5 shrink-0 text-amber-400" />
+            {isDockExpanded && <span>RECALIBRATE</span>}
+          </button>
+
+          <button
             onClick={onOpenGoalsModal}
             className="flex items-center gap-3 p-2.5 rounded-xl text-xs font-semibold text-white/40 hover:text-white hover:bg-white/5 transition cursor-pointer"
             title="Targets & TDEE Settings"
@@ -289,8 +342,23 @@ export const CommandDockLayout: React.FC<TrackerLayoutProps> = (props) => {
         </nav>
 
         {/* Dock Bottom Sync status */}
-        <div className="mt-auto pt-3 border-t border-white/10 flex items-center justify-center">
-          <div
+        <div className="mt-auto pt-3 border-t border-white/10 flex items-center justify-around">
+          <button
+            onClick={props.onOpenFirebaseAuth}
+            className="p-2 rounded-xl bg-white/5 hover:bg-blue-500/20 text-white/50 hover:text-blue-300 transition cursor-pointer text-center relative"
+            title={`Cloud Cluster: ${props.cloudSyncStatus || 'guest'}`}
+          >
+            <Cloud className="w-4 h-4 text-blue-400" />
+            <span
+              className={`w-2 h-2 rounded-full absolute top-1 right-1 ${
+                props.cloudSyncStatus === 'synced' ? 'bg-emerald-400 shadow-sm shadow-emerald-400/50' : 
+                props.cloudSyncStatus === 'syncing' ? 'bg-[#facc15] animate-ping' :
+                props.cloudSyncStatus === 'offline' ? 'bg-rose-500' : 'bg-white/40'
+              }`}
+            />
+          </button>
+
+          <button
             onClick={onOpenDataManagement}
             className="p-2 rounded-xl bg-white/5 text-white/50 hover:text-white transition cursor-pointer text-center"
             title={isOnline ? 'Local DB Synced' : 'Offline Mode'}
@@ -300,7 +368,7 @@ export const CommandDockLayout: React.FC<TrackerLayoutProps> = (props) => {
                 isOnline ? 'bg-emerald-400 shadow-sm shadow-emerald-400/50' : 'bg-rose-500'
               }`}
             />
-          </div>
+          </button>
         </div>
       </aside>
 
@@ -310,8 +378,29 @@ export const CommandDockLayout: React.FC<TrackerLayoutProps> = (props) => {
         <header className="border-b border-white/10 bg-[#0b0b0c]/90 backdrop-blur-xl px-3 sm:px-6 py-2.5 sm:py-3 pt-safe shrink-0 flex flex-col gap-2.5 sm:gap-3">
           {/* Top Row: Date, Actions, Athlete */}
           <div className="flex items-center justify-between gap-2 sm:gap-3 flex-wrap">
-            {/* Date Navigation Strip */}
+            {/* Date Navigation Strip & Mobile Profile Pill */}
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              {/* Mobile Profile Trigger (Visible on small screens) */}
+              <button
+                onClick={onOpenProfileModal}
+                className="md:hidden flex items-center gap-1.5 px-2 py-1 bg-[#141416] hover:bg-white/10 border border-white/10 rounded-xl text-white transition cursor-pointer active:scale-95"
+                title="Switch Athlete Profile"
+              >
+                <div
+                  className="w-5 h-5 rounded-lg flex items-center justify-center text-[9px] font-bold shrink-0 border"
+                  style={{
+                    backgroundColor: `${avatarColor}20`,
+                    borderColor: avatarColor,
+                    color: avatarColor,
+                  }}
+                >
+                  {initials}
+                </div>
+                <span className="text-[11px] font-mono-meta font-bold text-white max-w-[70px] truncate">
+                  {userProfile.name}
+                </span>
+              </button>
+
               <div className="flex items-center gap-1 bg-[#141416] p-1 rounded-xl border border-white/10">
                 <button
                   onClick={handlePrevDay}
@@ -346,6 +435,23 @@ export const CommandDockLayout: React.FC<TrackerLayoutProps> = (props) => {
 
             {/* Quick Action Shortcuts (Scrollable strip on small mobile) */}
             <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-0.5 max-w-full">
+              {props.onOpenFirebaseAuth && (
+                <button
+                  onClick={props.onOpenFirebaseAuth}
+                  className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 bg-[#141416] hover:bg-blue-500/10 text-white/80 hover:text-blue-300 border border-blue-500/30 rounded-xl text-[11px] sm:text-xs font-mono-meta transition cursor-pointer shrink-0 active:scale-95"
+                  title="Firebase Cloud Status & Account"
+                >
+                  <Cloud className="w-3.5 h-3.5 text-blue-400" />
+                  <span className="hidden sm:inline">
+                    {props.cloudSyncStatus === 'synced' ? 'CLOUD' : props.cloudSyncStatus === 'syncing' ? 'SYNC' : 'GUEST'}
+                  </span>
+                  <span className={`w-1.5 h-1.5 rounded-full ${
+                    props.cloudSyncStatus === 'synced' ? 'bg-emerald-400' :
+                    props.cloudSyncStatus === 'syncing' ? 'bg-[#facc15] animate-ping' : 'bg-white/40'
+                  }`} />
+                </button>
+              )}
+
               <button
                 onClick={() => onOpenBarcode('breakfast')}
                 className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 bg-[#141416] hover:bg-white/10 text-white/80 hover:text-white border border-white/10 rounded-xl text-[11px] sm:text-xs font-mono-meta transition cursor-pointer shrink-0 active:scale-95"

@@ -24,8 +24,6 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
   mealType,
   onQuickAdd,
 }) => {
-  if (!isOpen) return null;
-
   const [name, setName] = useState('');
   const [selectedMeal, setSelectedMeal] = useState<MealType>(mealType);
   const [calories, setCalories] = useState<string>('');
@@ -33,6 +31,8 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
   const [carbs, setCarbs] = useState<string>('');
   const [fat, setFat] = useState<string>('');
   const [fiber, setFiber] = useState<string>('');
+
+  if (!isOpen) return null;
 
   // Automatically estimate calories from macros if calories is empty
   const handleMacroChange = (p: string, c: string, f: string) => {

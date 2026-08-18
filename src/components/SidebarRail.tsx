@@ -2,6 +2,7 @@ import React from 'react';
 import {
   LayoutDashboard,
   BarChart3,
+  Calendar,
   Sparkles,
   BookOpen,
   Database,
@@ -17,8 +18,8 @@ import { UserProfile } from '../types/nutrition';
 import { MobileBottomNav } from './MobileBottomNav';
 
 interface SidebarRailProps {
-  activeTab: 'tracker' | 'analytics';
-  setActiveTab: (tab: 'tracker' | 'analytics') => void;
+  activeTab: 'tracker' | 'analytics' | 'planner';
+  setActiveTab: (tab: 'tracker' | 'analytics' | 'planner') => void;
   onOpenAiAdvisor: () => void;
   onOpenRecipeBuilder: () => void;
   onOpenSchemaModal: () => void;
@@ -119,6 +120,19 @@ export const SidebarRail: React.FC<SidebarRailProps> = ({
           >
             <LayoutDashboard className="w-4 h-4 shrink-0 text-[#facc15]" />
             <span className="uppercase tracking-wider font-semibold">Dashboard</span>
+          </button>
+
+          {/* Menu Planner */}
+          <button
+            onClick={() => setActiveTab('planner')}
+            className={`flex items-center gap-3.5 px-3 py-2.5 rounded-lg text-sm font-medium transition cursor-pointer font-geist ${
+              activeTab === 'planner'
+                ? 'text-white bg-white/5 border border-white/10'
+                : 'text-white/40 hover:text-amber-400 hover:bg-white/[0.02]'
+            }`}
+          >
+            <Calendar className="w-4 h-4 shrink-0 text-amber-400" />
+            <span className="uppercase tracking-wider font-semibold">Menu Planner</span>
           </button>
 
           {/* Analytics */}
@@ -263,6 +277,8 @@ export const SidebarRail: React.FC<SidebarRailProps> = ({
         onOpenThemeModal={onOpenThemeModal}
         onOpenGoalsModal={onOpenGoalsModal}
         onOpenWeightObjectiveModal={onOpenWeightObjectiveModal}
+        onOpenProfileModal={onOpenProfileModal}
+        onOpenDataManagement={onOpenDataManagement}
         userProfile={userProfile}
       />
     </>

@@ -335,6 +335,85 @@ Guidelines:
           return;
         }
 
+        if (req.url?.startsWith('/api/ai/generate-meal-plan') && req.method === 'POST') {
+          let body = '';
+          req.on('data', (chunk) => {
+            body += chunk;
+          });
+          req.on('end', async () => {
+            try {
+              const { weekStartDate, userProfile, savedRecipes = [] } = JSON.parse(body || '{}');
+              const targetCalories = userProfile?.targetCalories || 2000;
+              const targetProtein = userProfile?.targetProteinG || 160;
+              const targetCarbs = userProfile?.targetCarbsG || 200;
+              const targetFat = userProfile?.targetFatG || 65;
+              const goalType = userProfile?.goalType || 'maintain';
+
+              const prompt = `You are MacroPulse AI, an elite sports dietitian and meal planning algorithm.
+Generate a structured 7-day meal plan for the week starting on Monday: ${weekStartDate}.
+
+Athlete Profile:
+- Name: ${userProfile?.name || 'Athlete'}
+- Goal Strategy: ${goalType.toUpperCase()}
+- Daily Targets: ${targetCalories} KCAL | ${targetProtein}g Protein | ${targetCarbs}g Carbs | ${targetFat}g Fat | ${userProfile?.targetFiberG || 28}g Fiber
+- User Saved Recipes: ${JSON.stringify(savedRecipes.slice(0, 8))}
+
+Guidelines:
+1. For each day (Monday to Sunday, 7 dates starting from ${weekStartDate}), create 4 distinct meal slots: "breakfast", "lunch", "dinner", "snack".
+2. The sum of all 4 meals per day MUST closely match the target: ~${targetCalories} kcal (±50 kcal) and ~${targetProtein}g protein.
+3. Every meal item MUST have:
+   - "name": Descriptive delicious dish name (e.g. "Anabolic Greek Yogurt Power Bowl with Honey & Chia")
+   - "portion": Human-readable portion (e.g. "200g yogurt + 25g seeds")
+   - "calories": integer
+   - "protein": number (g)
+   - "carbs": number (g)
+   - "fat": number (g)
+   - "fiber": number (g)
+
+Return STRICT JSON matching this schema:
+{
+  "days": {
+    "YYYY-MM-DD": {
+      "date": "YYYY-MM-DD",
+      "dayOfWeek": "Mon",
+      "slots": {
+        "breakfast": [{ "name": "...", "portion": "...", "calories": 450, "protein": 38.0, "carbs": 42.0, "fat": 12.0, "fiber": 6.0 }],
+        "lunch": [{ "name": "...", "portion": "...", "calories": 650, "protein": 52.0, "carbs": 65.0, "fat": 18.0, "fiber": 8.0 }],
+        "dinner": [{ "name": "...", "portion": "...", "calories": 600, "protein": 48.0, "carbs": 50.0, "fat": 20.0, "fiber": 7.0 }],
+        "snack": [{ "name": "...", "portion": "...", "calories": 300, "protein": 22.0, "carbs": 33.0, "fat": 8.0, "fiber": 4.0 }]
+      }
+    }
+  }
+}`;
+
+              const response = await ai.models.generateContent({
+                model: 'gemini-3.7-flash',
+                contents: [{ role: 'user', parts: [{ text: prompt }] }],
+                config: {
+                  responseMimeType: 'application/json',
+                },
+              });
+
+              const responseText = response.text || '{}';
+              let parsedData;
+              try {
+                parsedData = JSON.parse(responseText);
+              } catch {
+                const cleaned = responseText.replace(/```json\n?|\n?```/g, '').trim();
+                parsedData = JSON.parse(cleaned);
+              }
+
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({ success: true, plan: parsedData }));
+            } catch (err: any) {
+              res.statusCode = 500;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({ success: false, error: err.message }));
+            }
+          });
+          return;
+        }
+
         next();
       });
     },

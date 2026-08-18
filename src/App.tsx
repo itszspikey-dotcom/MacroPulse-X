@@ -29,6 +29,10 @@ import { AnalyticsView } from './components/AnalyticsView';
 import { LayoutRenderer } from './components/layouts/LayoutRenderer';
 import { layoutService, LayoutMode } from './services/layoutService';
 import { triggerHaptic } from './services/audioFeedback';
+import { FirebaseAuthModal } from './components/FirebaseAuthModal';
+import { OnboardingWizardModal } from './components/OnboardingWizardModal';
+import { firebaseSyncService, CloudSyncStatus } from './services/firebaseSyncService';
+import { User } from './lib/firebase';
 
 export default function App() {
   const [currentDate, setCurrentDate] = useState<string>(
@@ -48,7 +52,9 @@ export default function App() {
   );
   const [isOnline, setIsOnline] = useState<boolean>(true);
   const [pendingSyncCount, setPendingSyncCount] = useState<number>(0);
-  const [activeTab, setActiveTab] = useState<'tracker' | 'analytics'>('tracker');
+  const [activeTab, setActiveTab] = useState<'tracker' | 'analytics' | 'planner'>('tracker');
+  const [cloudSyncStatus, setCloudSyncStatus] = useState<CloudSyncStatus>('guest');
+  const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
 
   // Modal States
   const [activeMealType, setActiveMealType] = useState<MealType>('breakfast');
@@ -66,6 +72,27 @@ export default function App() {
   const [isSchemaOpen, setIsSchemaOpen] = useState(false);
   const [isAiAdvisorOpen, setIsAiAdvisorOpen] = useState(false);
   const [isDataManagementOpen, setIsDataManagementOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+  const [isOnboardingFirstTime, setIsOnboardingFirstTime] = useState(false);
+
+  // Check onboarding on mount & subscribe to firebase sync status
+  useEffect(() => {
+    const onboardingDone = localStorage.getItem('macropulse_onboarding_completed');
+    if (!onboardingDone) {
+      setIsOnboardingFirstTime(true);
+      setIsOnboardingOpen(true);
+    }
+
+    const unsubCloud = firebaseSyncService.subscribeStatus((status, user) => {
+      setCloudSyncStatus(status);
+      setFirebaseUser(user);
+    });
+
+    return () => {
+      unsubCloud();
+    };
+  }, []);
 
   // Selected food item for portion detail logger / editor
   const [selectedFoodItem, setSelectedFoodItem] = useState<FoodItem | null>(null);
@@ -325,6 +352,15 @@ export default function App() {
     const updated = syncEngine.updateUserProfile(updates);
     setUserProfile(updated);
     refreshDailyData();
+    firebaseSyncService.triggerDebouncedSync();
+  };
+
+  const handleCompleteOnboarding = (profile: UserProfile) => {
+    syncEngine.saveUserProfile(profile);
+    setUserProfile(profile);
+    setIsOnboardingOpen(false);
+    refreshDailyData();
+    firebaseSyncService.triggerDebouncedSync();
   };
 
   return (
@@ -356,6 +392,13 @@ export default function App() {
         onOpenRecipeBuilder={() => setIsRecipeBuilderOpen(true)}
         onOpenDataManagement={handleOpenDataManagement}
         onOpenSchemaModal={() => setIsSchemaOpen(true)}
+        onOpenFirebaseAuth={() => setIsAuthModalOpen(true)}
+        onOpenOnboarding={() => {
+          setIsOnboardingFirstTime(false);
+          setIsOnboardingOpen(true);
+        }}
+        cloudSyncStatus={cloudSyncStatus}
+        firebaseUser={firebaseUser}
         onAddWater={handleAddWater}
         onResetWater={handleResetWater}
       />
@@ -371,6 +414,19 @@ export default function App() {
         onOpenWeightObjectiveModal={() => {
           setIsProfileModalOpen(false);
           setIsWeightObjectiveOpen(true);
+        }}
+        onOpenDataManagement={() => {
+          setIsProfileModalOpen(false);
+          setIsDataManagementOpen(true);
+        }}
+        onOpenOnboardingWizard={() => {
+          setIsProfileModalOpen(false);
+          setIsOnboardingFirstTime(false);
+          setIsOnboardingOpen(true);
+        }}
+        onOpenFirebaseAuth={() => {
+          setIsProfileModalOpen(false);
+          setIsAuthModalOpen(true);
         }}
       />
 
@@ -447,6 +503,19 @@ export default function App() {
           setIsGoalsOpen(false);
           setIsThemeOpen(true);
         }}
+        onOpenDataManagement={() => {
+          setIsGoalsOpen(false);
+          setIsDataManagementOpen(true);
+        }}
+        onOpenOnboardingWizard={() => {
+          setIsGoalsOpen(false);
+          setIsOnboardingFirstTime(false);
+          setIsOnboardingOpen(true);
+        }}
+        onOpenFirebaseAuth={() => {
+          setIsGoalsOpen(false);
+          setIsAuthModalOpen(true);
+        }}
       />
 
       <ThemeSettingsModal
@@ -473,6 +542,20 @@ export default function App() {
         onClose={() => setIsAiAdvisorOpen(false)}
         dailySummary={dailySummary}
         userProfile={userProfile}
+      />
+
+      <FirebaseAuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onSyncCompleted={refreshDailyData}
+      />
+
+      <OnboardingWizardModal
+        isOpen={isOnboardingOpen}
+        onClose={() => setIsOnboardingOpen(false)}
+        onComplete={handleCompleteOnboarding}
+        currentProfile={userProfile}
+        isFirstTime={isOnboardingFirstTime}
       />
     </div>
   );

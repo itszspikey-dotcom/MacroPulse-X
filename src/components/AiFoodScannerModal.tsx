@@ -15,7 +15,6 @@ import {
 import confetti from 'canvas-confetti';
 import { FoodItem, MealType } from '../types/nutrition';
 import { playSuccessChime, triggerHaptic } from '../services/audioFeedback';
-import { scanFoodImage } from '../services/geminiClient';
 
 interface AiFoodScannerModalProps {
   isOpen: boolean;
@@ -147,12 +146,26 @@ export const AiFoodScannerModal: React.FC<AiFoodScannerModalProps> = ({
     setAiResult(null);
 
     try {
-      const data = await scanFoodImage(base64Image, 'image/jpeg', contextPrompt);
-      setAiResult(data);
-      playSuccessChime();
-      triggerHaptic('success');
+      const response = await fetch('/api/ai/scan-food', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageBase64: base64Image,
+          mimeType: 'image/jpeg',
+          promptContext: contextPrompt,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success && data.data) {
+        setAiResult(data.data);
+        playSuccessChime();
+        triggerHaptic('success');
+      } else {
+        throw new Error(data.error || 'Failed to analyze meal');
+      }
     } catch (err: any) {
-      console.warn('Gemini AI recognition error, using smart fallback estimation:', err);
+      console.warn('Backend AI recognition error, using smart fallback estimation:', err);
       // Smart offline / fallback analysis
       const fallbackResult = {
         meal_title: 'Nutritious Mixed Meal Plate',

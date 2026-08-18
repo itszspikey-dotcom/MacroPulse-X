@@ -17,7 +17,6 @@ import {
 import { DailySummary, MacroGoals, UserProfile } from '../types/nutrition';
 import { playSuccessChime, triggerHaptic } from '../services/audioFeedback';
 import { generateDynamicNutritionAdvice, ChatMessage } from '../services/aiAdvisorService';
-import { getNutritionAdvice } from '../services/geminiClient';
 
 interface AiNutritionAdvisorModalProps {
   isOpen: boolean;
@@ -32,8 +31,6 @@ export const AiNutritionAdvisorModal: React.FC<AiNutritionAdvisorModalProps> = (
   dailySummary,
   userProfile,
 }) => {
-  if (!isOpen) return null;
-
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [inputQuery, setInputQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -59,8 +56,12 @@ How can I help you optimize your meals, hit your macros, or formulate recipes to
   };
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, isLoading]);
+    if (isOpen) {
+      scrollToBottom();
+    }
+  }, [messages, isLoading, isOpen]);
+
+  if (!isOpen) return null;
 
   const quickPrompts = [
     { label: '🎯 Remaining Macros', query: 'What should I eat right now to hit my remaining macros?' },
@@ -82,32 +83,37 @@ How can I help you optimize your meals, hit your macros, or formulate recipes to
     triggerHaptic('light');
 
     try {
-      const answer = await getNutritionAdvice(
-        text,
-        updatedMessages,
-        dailySummary,
-        {
-          calories: userProfile.targetCalories,
-          protein: userProfile.targetProteinG,
-          carbs: userProfile.targetCarbsG,
-          fat: userProfile.targetFatG,
-          fiber: userProfile.targetFiberG,
-        },
-        {
-          name: userProfile.name,
-          goalType: userProfile.goalType,
-          weightKg: userProfile.weightKg,
-          heightCm: userProfile.heightCm,
-          activityLevel: userProfile.activityLevel,
-        }
-      );
+      const response = await fetch('/api/ai/nutrition-advisor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: text,
+          history: updatedMessages,
+          dailySummary,
+          macroGoals: {
+            calories: userProfile.targetCalories,
+            protein: userProfile.targetProteinG,
+            carbs: userProfile.targetCarbsG,
+            fat: userProfile.targetFatG,
+            fiber: userProfile.targetFiberG,
+          },
+          userProfile: {
+            name: userProfile.name,
+            goalType: userProfile.goalType,
+            weightKg: userProfile.weightKg,
+            heightCm: userProfile.heightCm,
+            activityLevel: userProfile.activityLevel,
+          },
+        }),
+      });
 
-      if (answer && answer.trim().length > 0) {
-        setMessages((prev) => [...prev, { role: 'assistant', text: answer }]);
+      const data = await response.json();
+      if (data.success && data.answer) {
+        setMessages((prev) => [...prev, { role: 'assistant', text: data.answer }]);
         playSuccessChime();
         triggerHaptic('success');
       } else {
-        throw new Error('Failed to get live model response');
+        throw new Error(data.error || 'Failed to get live model response');
       }
     } catch (e: any) {
       console.warn('Handling query via dynamic client-side advisor reasoning:', e);

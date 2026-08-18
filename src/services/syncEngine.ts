@@ -949,6 +949,48 @@ class SyncEngine {
       return { success: false, message: e.message || 'Failed to import data' };
     }
   }
+
+  // Helper for direct profile saving
+  public saveUserProfile(profile: UserProfile): UserProfile {
+    const profiles = this.getAllProfiles();
+    const index = profiles.findIndex((p) => p.id === profile.id);
+    if (index >= 0) {
+      profiles[index] = profile;
+    } else {
+      profiles.push(profile);
+    }
+    localStorage.setItem(STORAGE_PROFILES_LIST_KEY, JSON.stringify(profiles));
+    localStorage.setItem(STORAGE_PROFILE_KEY, JSON.stringify(profile));
+    this.enqueueAction('update', 'user_goals', profile);
+    this.notifyListeners();
+    return profile;
+  }
+
+  // Helper for batch daily summary logs
+  public getAllLogs(): Record<string, DailySummary> {
+    const allLogs = this.getAllMealLogs();
+    const dates = Array.from(new Set(allLogs.map((l) => l.date)));
+    const result: Record<string, DailySummary> = {};
+    for (const d of dates) {
+      result[d] = this.getDailySummary(d);
+    }
+    return result;
+  }
+
+  // Helper to save a synced log
+  public saveDailyLog(log: any): void {
+    if (!log) return;
+    if (Array.isArray(log.loggedItems)) {
+      const current = this.getAllMealLogs();
+      const existingIds = new Set(current.map((l) => l.id));
+      const newItems = log.loggedItems.filter((i: any) => !existingIds.has(i.id));
+      if (newItems.length > 0) {
+        localStorage.setItem(STORAGE_LOGS_KEY, JSON.stringify([...newItems, ...current]));
+      }
+    }
+    this.notifyListeners();
+  }
 }
 
 export const syncEngine = new SyncEngine();
+

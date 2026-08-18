@@ -21,6 +21,7 @@ import {
   Sliders,
   Zap,
   Palette,
+  ArrowUpDown,
 } from 'lucide-react';
 import { UserProfile, WeightObjective } from '../types/nutrition';
 import { syncEngine } from '../services/syncEngine';
@@ -41,6 +42,9 @@ interface ProfileManagementModalProps {
   onProfileUpdated: (updated: UserProfile) => void;
   initialTab?: 'list' | 'edit' | 'create';
   onOpenWeightObjectiveModal?: () => void;
+  onOpenDataManagement?: () => void;
+  onOpenOnboardingWizard?: () => void;
+  onOpenFirebaseAuth?: () => void;
 }
 
 const PALETTE_COLORS = [
@@ -61,6 +65,9 @@ export const ProfileManagementModal: React.FC<ProfileManagementModalProps> = ({
   onProfileUpdated,
   initialTab = 'list',
   onOpenWeightObjectiveModal,
+  onOpenDataManagement,
+  onOpenOnboardingWizard,
+  onOpenFirebaseAuth,
 }) => {
   const [activeTab, setActiveTab] = useState<'list' | 'edit' | 'create'>(initialTab);
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
@@ -448,50 +455,66 @@ export const ProfileManagementModal: React.FC<ProfileManagementModalProps> = ({
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-white/10 bg-[#0e0e10] px-4 pt-2 gap-2 shrink-0">
-          <button
-            onClick={() => {
-              setActiveTab('list');
-              loadProfiles();
-              triggerHaptic('light');
-            }}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-mono-meta tracking-wider rounded-t-xl transition cursor-pointer border-b-2 ${
-              activeTab === 'list'
-                ? 'border-[#facc15] text-[#facc15] bg-[#141416]'
-                : 'border-transparent text-white/40 hover:text-white/80'
-            }`}
-          >
-            <Users className="w-3.5 h-3.5" />
-            <span>ALL PROFILES ({profiles.length})</span>
-          </button>
+        <div className="flex items-center justify-between border-b border-white/10 bg-[#0e0e10] px-4 pt-2 gap-2 shrink-0 overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setActiveTab('list');
+                loadProfiles();
+                triggerHaptic('light');
+              }}
+              className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 text-xs font-mono-meta tracking-wider rounded-t-xl transition cursor-pointer border-b-2 shrink-0 ${
+                activeTab === 'list'
+                  ? 'border-[#facc15] text-[#facc15] bg-[#141416]'
+                  : 'border-transparent text-white/40 hover:text-white/80'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>PROFILES ({profiles.length})</span>
+            </button>
 
-          <button
-            onClick={() => {
-              populateFormWithProfile(userProfile);
-              setActiveTab('edit');
-              triggerHaptic('light');
-            }}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-mono-meta tracking-wider rounded-t-xl transition cursor-pointer border-b-2 ${
-              activeTab === 'edit'
-                ? 'border-[#facc15] text-[#facc15] bg-[#141416]'
-                : 'border-transparent text-white/40 hover:text-white/80'
-            }`}
-          >
-            <Edit2 className="w-3.5 h-3.5" />
-            <span>EDIT NAME & GOALS</span>
-          </button>
+            <button
+              onClick={() => {
+                populateFormWithProfile(userProfile);
+                setActiveTab('edit');
+                triggerHaptic('light');
+              }}
+              className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 text-xs font-mono-meta tracking-wider rounded-t-xl transition cursor-pointer border-b-2 shrink-0 ${
+                activeTab === 'edit'
+                  ? 'border-[#facc15] text-[#facc15] bg-[#141416]'
+                  : 'border-transparent text-white/40 hover:text-white/80'
+              }`}
+            >
+              <Edit2 className="w-3.5 h-3.5" />
+              <span>EDIT</span>
+            </button>
 
-          <button
-            onClick={handleStartCreate}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-mono-meta tracking-wider rounded-t-xl transition cursor-pointer border-b-2 ${
-              activeTab === 'create'
-                ? 'border-[#facc15] text-[#facc15] bg-[#141416]'
-                : 'border-transparent text-white/40 hover:text-white/80'
-            }`}
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>ADD NEW PROFILE</span>
-          </button>
+            <button
+              onClick={handleStartCreate}
+              className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 text-xs font-mono-meta tracking-wider rounded-t-xl transition cursor-pointer border-b-2 shrink-0 ${
+                activeTab === 'create'
+                  ? 'border-[#facc15] text-[#facc15] bg-[#141416]'
+                  : 'border-transparent text-white/40 hover:text-white/80'
+              }`}
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>NEW</span>
+            </button>
+          </div>
+
+          {onOpenDataManagement && (
+            <button
+              onClick={() => {
+                onClose();
+                onOpenDataManagement();
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 mb-1 text-[11px] font-mono-meta font-bold rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition cursor-pointer shrink-0"
+              title="Export / Import JSON Data and QR Sync"
+            >
+              <ArrowUpDown className="w-3.5 h-3.5" />
+              <span>DATA / QR</span>
+            </button>
+          )}
         </div>
 
         {/* Tab Content */}
@@ -501,7 +524,7 @@ export const ProfileManagementModal: React.FC<ProfileManagementModalProps> = ({
           {/* ======================================================== */}
           {activeTab === 'list' && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
                   <h3 className="font-oswald text-base uppercase text-white font-semibold">
                     Configured Personas & Athletes
@@ -510,13 +533,27 @@ export const ProfileManagementModal: React.FC<ProfileManagementModalProps> = ({
                     Click "Switch" to instantly change the active tracker persona
                   </p>
                 </div>
-                <button
-                  onClick={handleStartCreate}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#facc15] hover:bg-yellow-300 text-slate-950 rounded-lg text-xs font-bold font-mono-meta transition cursor-pointer shadow-md"
-                >
-                  <Plus className="w-3.5 h-3.5 stroke-[3]" />
-                  <span>NEW PROFILE</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  {onOpenOnboardingWizard && (
+                    <button
+                      onClick={() => {
+                        onClose();
+                        onOpenOnboardingWizard();
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-xs font-bold font-mono-meta transition cursor-pointer"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>ONBOARDING WIZARD</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={handleStartCreate}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#facc15] hover:bg-yellow-300 text-slate-950 rounded-lg text-xs font-bold font-mono-meta transition cursor-pointer shadow-md"
+                  >
+                    <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                    <span>NEW PROFILE</span>
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 gap-3">

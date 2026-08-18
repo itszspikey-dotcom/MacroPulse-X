@@ -50,14 +50,12 @@ export const FoodDetailModal: React.FC<FoodDetailModalProps> = ({
   onSaveLog,
   onDeleteLog,
 }) => {
-  if (!isOpen || !foodItem) return null;
-
   const [selectedMeal, setSelectedMeal] = useState<MealType>(initialMealType);
   const [amount, setAmount] = useState<number | string>(
-    editingLog ? editingLog.servingAmount : foodItem.defaultServingSize || 100
+    editingLog ? editingLog.servingAmount : foodItem?.defaultServingSize || 100
   );
   const [unit, setUnit] = useState<ServingUnit>(
-    editingLog ? editingLog.servingUnit : foodItem.defaultServingUnit || 'g'
+    editingLog ? editingLog.servingUnit : foodItem?.defaultServingUnit || 'g'
   );
   const [isFavorite, setIsFavorite] = useState(false);
 
@@ -75,6 +73,8 @@ export const FoodDetailModal: React.FC<FoodDetailModalProps> = ({
       }
     }
   }, [foodItem, editingLog, initialMealType]);
+
+  if (!isOpen || !foodItem) return null;
 
   // Strict dynamic portion calculations
   const parsedAmt = parseFloat(amount.toString()) || 0;

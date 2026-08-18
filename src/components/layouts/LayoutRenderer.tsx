@@ -6,6 +6,7 @@ import { FocusDialLayout } from './FocusDialLayout';
 import { SplitWorkspaceLayout } from './SplitWorkspaceLayout';
 import { DenseHudLayout } from './DenseHudLayout';
 import { AnalyticsView } from '../AnalyticsView';
+import { MenuPlannerView } from '../MenuPlannerView';
 import { MobileBottomNav } from '../MobileBottomNav';
 
 interface LayoutRendererProps extends TrackerLayoutProps {
@@ -14,6 +15,34 @@ interface LayoutRendererProps extends TrackerLayoutProps {
 
 export const LayoutRenderer: React.FC<LayoutRendererProps> = (props) => {
   const { layoutMode, activeTab, userProfile, onOpenWeightObjectiveModal } = props;
+
+  // If menu planner tab is active, render MenuPlannerView
+  if (activeTab === 'planner') {
+    return (
+      <div className="flex flex-col h-screen w-full bg-[#0b0b0c] text-white font-geist overflow-hidden relative select-none">
+        <div className="ambient-bg" />
+        <MenuPlannerView
+          userProfile={userProfile}
+          onOpenRecipeBuilder={props.onOpenRecipeBuilder}
+          onOpenAiAdvisor={props.onOpenAiAdvisor}
+          onBackToTracker={() => props.setActiveTab('tracker')}
+        />
+        {/* Mobile bottom navigation bar for quick switching */}
+        <MobileBottomNav
+          activeTab={props.activeTab}
+          setActiveTab={props.setActiveTab}
+          onOpenAiAdvisor={props.onOpenAiAdvisor}
+          onOpenRecipeBuilder={props.onOpenRecipeBuilder}
+          onOpenThemeModal={props.onOpenThemeModal}
+          onOpenGoalsModal={props.onOpenGoalsModal}
+          onOpenWeightObjectiveModal={props.onOpenWeightObjectiveModal}
+          onOpenProfileModal={props.onOpenProfileModal}
+          onOpenDataManagement={props.onOpenDataManagement}
+          userProfile={props.userProfile}
+        />
+      </div>
+    );
+  }
 
   // If analytics tab is active, render AnalyticsView with full layout shell + MobileBottomNav
   if (activeTab === 'analytics') {
@@ -53,6 +82,8 @@ export const LayoutRenderer: React.FC<LayoutRendererProps> = (props) => {
           onOpenThemeModal={props.onOpenThemeModal}
           onOpenGoalsModal={props.onOpenGoalsModal}
           onOpenWeightObjectiveModal={props.onOpenWeightObjectiveModal}
+          onOpenProfileModal={props.onOpenProfileModal}
+          onOpenDataManagement={props.onOpenDataManagement}
           userProfile={props.userProfile}
         />
       </div>

@@ -47,8 +47,6 @@ export const ThemeSettingsModal: React.FC<ThemeSettingsModalProps> = ({
   userProfile,
   onUpdateProfile,
 }) => {
-  if (!isOpen) return null;
-
   const [activeTab, setActiveTab] = useState<'layouts' | 'themes'>('layouts');
   const [activeTheme, setActiveTheme] = useState<AppTheme>(() => themeService.getActiveTheme());
   const [previewTheme, setPreviewTheme] = useState<AppTheme>(() => themeService.getActiveTheme());
@@ -69,6 +67,8 @@ export const ThemeSettingsModal: React.FC<ThemeSettingsModalProps> = ({
       unsubLayout();
     };
   }, []);
+
+  if (!isOpen) return null;
 
   const handleSelectTheme = (theme: AppTheme) => {
     setPreviewTheme(theme);

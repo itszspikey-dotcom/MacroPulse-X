@@ -36,8 +36,6 @@ export const RecipeBuilderModal: React.FC<RecipeBuilderModalProps> = ({
   onClose,
   onRecipeSaved,
 }) => {
-  if (!isOpen) return null;
-
   const [recipeName, setRecipeName] = useState('');
   const [description, setDescription] = useState('');
   const [servings, setServings] = useState<number | string>(2);
@@ -46,6 +44,8 @@ export const RecipeBuilderModal: React.FC<RecipeBuilderModalProps> = ({
   // Ingredient search state
   const [isSearchingIngredient, setIsSearchingIngredient] = useState(false);
   const [ingredientSearchQuery, setIngredientSearchQuery] = useState('');
+
+  if (!isOpen) return null;
 
   // Calculate totals across ingredients
   let totalWeightG = 0;

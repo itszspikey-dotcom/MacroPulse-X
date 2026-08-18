@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   Target,
@@ -14,6 +14,9 @@ import {
   ArrowRight,
   Zap,
   Palette,
+  ArrowUpDown,
+  FileJson,
+  QrCode,
 } from 'lucide-react';
 import { UserProfile } from '../types/nutrition';
 import {
@@ -33,6 +36,9 @@ interface GoalsAndTdeeModalProps {
   onOpenProfileManager?: () => void;
   onOpenWeightObjective?: () => void;
   onOpenThemeModal?: () => void;
+  onOpenDataManagement?: () => void;
+  onOpenOnboardingWizard?: () => void;
+  onOpenFirebaseAuth?: () => void;
 }
 
 export const GoalsAndTdeeModal: React.FC<GoalsAndTdeeModalProps> = ({
@@ -43,9 +49,10 @@ export const GoalsAndTdeeModal: React.FC<GoalsAndTdeeModalProps> = ({
   onOpenProfileManager,
   onOpenWeightObjective,
   onOpenThemeModal,
+  onOpenDataManagement,
+  onOpenOnboardingWizard,
+  onOpenFirebaseAuth,
 }) => {
-  if (!isOpen) return null;
-
   const currentTheme = themeService.getActiveTheme();
   const [selectedThemeId, setSelectedThemeId] = useState<string>(userProfile.themeId || currentTheme.id);
 
@@ -76,6 +83,28 @@ export const GoalsAndTdeeModal: React.FC<GoalsAndTdeeModalProps> = ({
   const [targetFatG, setTargetFatG] = useState<number | string>(userProfile.targetFatG);
   const [targetFiberG, setTargetFiberG] = useState<number | string>(userProfile.targetFiberG);
   const [targetWaterMl, setTargetWaterMl] = useState<number | string>(userProfile.targetWaterMl);
+
+  // Sync state whenever userProfile changes when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedThemeId(userProfile.themeId || currentTheme.id);
+      setName(userProfile.name);
+      setGender(userProfile.gender);
+      setAge(userProfile.age);
+      setHeightCm(userProfile.heightCm);
+      setWeightKg(userProfile.weightKg);
+      setActivityLevel(userProfile.activityLevel);
+      setGoalType(userProfile.goalType);
+      setTargetCalories(userProfile.targetCalories);
+      setTargetProteinG(userProfile.targetProteinG);
+      setTargetCarbsG(userProfile.targetCarbsG);
+      setTargetFatG(userProfile.targetFatG);
+      setTargetFiberG(userProfile.targetFiberG);
+      setTargetWaterMl(userProfile.targetWaterMl);
+    }
+  }, [isOpen, userProfile]);
+
+  if (!isOpen) return null;
 
   // Live weight objective plan if configured
   const weightObjective = userProfile.weightObjective;
@@ -286,6 +315,77 @@ export const GoalsAndTdeeModal: React.FC<GoalsAndTdeeModalProps> = ({
               placeholder="e.g. Alex Rivera"
               className="w-full bg-slate-900 border border-slate-700 focus:border-emerald-500 rounded-xl px-3 py-2 text-sm font-bold text-white outline-none"
             />
+          </div>
+
+          {/* Quick Hub Actions for Mobile & Desktop */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {onOpenProfileManager && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenProfileManager();
+                }}
+                className="p-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700/90 border border-slate-700 text-left transition cursor-pointer flex items-center gap-2 group"
+              >
+                <Users className="w-4 h-4 text-[#facc15] shrink-0 group-hover:scale-110 transition" />
+                <div className="min-w-0">
+                  <div className="text-[11px] font-bold text-white truncate">Profiles</div>
+                  <div className="text-[9px] text-slate-400 truncate">Switch & add athletes</div>
+                </div>
+              </button>
+            )}
+
+            {onOpenOnboardingWizard && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenOnboardingWizard();
+                }}
+                className="p-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700/90 border border-amber-500/30 text-left transition cursor-pointer flex items-center gap-2 group"
+              >
+                <Sparkles className="w-4 h-4 text-amber-400 shrink-0 group-hover:scale-110 transition" />
+                <div className="min-w-0">
+                  <div className="text-[11px] font-bold text-amber-300 truncate">Recalibrate</div>
+                  <div className="text-[9px] text-slate-400 truncate">Onboarding wizard</div>
+                </div>
+              </button>
+            )}
+
+            {onOpenFirebaseAuth && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenFirebaseAuth();
+                }}
+                className="p-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700/90 border border-blue-500/30 text-left transition cursor-pointer flex items-center gap-2 group"
+              >
+                <Zap className="w-4 h-4 text-blue-400 shrink-0 group-hover:scale-110 transition" />
+                <div className="min-w-0">
+                  <div className="text-[11px] font-bold text-blue-300 truncate">Firebase Cloud</div>
+                  <div className="text-[9px] text-slate-400 truncate">Auth & live cluster</div>
+                </div>
+              </button>
+            )}
+
+            {onOpenDataManagement && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenDataManagement();
+                }}
+                className="p-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700/90 border border-slate-700 text-left transition cursor-pointer flex items-center gap-2 group"
+              >
+                <ArrowUpDown className="w-4 h-4 text-emerald-400 shrink-0 group-hover:scale-110 transition" />
+                <div className="min-w-0">
+                  <div className="text-[11px] font-bold text-white truncate">Data / QR</div>
+                  <div className="text-[9px] text-slate-400 truncate">JSON backup & QR sync</div>
+                </div>
+              </button>
+            )}
           </div>
 
           {/* Biometrics Input Grid */}
