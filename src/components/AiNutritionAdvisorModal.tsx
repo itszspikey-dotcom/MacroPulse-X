@@ -17,6 +17,7 @@ import {
 import { DailySummary, MacroGoals, UserProfile } from '../types/nutrition';
 import { playSuccessChime, triggerHaptic } from '../services/audioFeedback';
 import { generateDynamicNutritionAdvice, ChatMessage } from '../services/aiAdvisorService';
+import { getNutritionAdvice } from '../services/geminiClient';
 
 interface AiNutritionAdvisorModalProps {
   isOpen: boolean;
@@ -81,37 +82,32 @@ How can I help you optimize your meals, hit your macros, or formulate recipes to
     triggerHaptic('light');
 
     try {
-      const response = await fetch('/api/ai/nutrition-advisor', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: text,
-          history: updatedMessages,
-          dailySummary,
-          macroGoals: {
-            calories: userProfile.targetCalories,
-            protein: userProfile.targetProteinG,
-            carbs: userProfile.targetCarbsG,
-            fat: userProfile.targetFatG,
-            fiber: userProfile.targetFiberG,
-          },
-          userProfile: {
-            name: userProfile.name,
-            goalType: userProfile.goalType,
-            weightKg: userProfile.weightKg,
-            heightCm: userProfile.heightCm,
-            activityLevel: userProfile.activityLevel,
-          },
-        }),
-      });
+      const answer = await getNutritionAdvice(
+        text,
+        updatedMessages,
+        dailySummary,
+        {
+          calories: userProfile.targetCalories,
+          protein: userProfile.targetProteinG,
+          carbs: userProfile.targetCarbsG,
+          fat: userProfile.targetFatG,
+          fiber: userProfile.targetFiberG,
+        },
+        {
+          name: userProfile.name,
+          goalType: userProfile.goalType,
+          weightKg: userProfile.weightKg,
+          heightCm: userProfile.heightCm,
+          activityLevel: userProfile.activityLevel,
+        }
+      );
 
-      const data = await response.json();
-      if (data.success && data.answer) {
-        setMessages((prev) => [...prev, { role: 'assistant', text: data.answer }]);
+      if (answer && answer.trim().length > 0) {
+        setMessages((prev) => [...prev, { role: 'assistant', text: answer }]);
         playSuccessChime();
         triggerHaptic('success');
       } else {
-        throw new Error(data.error || 'Failed to get live model response');
+        throw new Error('Failed to get live model response');
       }
     } catch (e: any) {
       console.warn('Handling query via dynamic client-side advisor reasoning:', e);
