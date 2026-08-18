@@ -1,0 +1,7 @@
+{
+  "name": "MacroPulse - Pro Calorie & Macro Tracker",
+  "description": "Production-grade offline-first nutrition and calorie tracking app with live barcode scanner, Open Food Facts & USDA lookup, AI food recognition, and dynamic macro analytics.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
