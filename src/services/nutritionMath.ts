@@ -223,9 +223,9 @@ export function calculateRecommendedMacros(
     fatG = Math.round((targetCalories * (customDistribution.fatPct / 100)) / 9);
   } else {
     // High-performance sports baseline:
-    // Protein: 2.0g per kg of bodyweight
-    proteinG = Math.round(Math.min(targetCalories * 0.35 / 4, weightKg * 2.0));
-    // Fat: 25% of total calories
+    // Protein floor: at least 2.0g per kg of bodyweight, or 35% of calories if higher
+    proteinG = Math.round(Math.max(weightKg * 2.0, (targetCalories * 0.35) / 4));
+    // Fat: 28% of total calories
     const fatCalories = targetCalories * 0.28;
     fatG = Math.round(fatCalories / 9);
     // Remaining calories from complex carbs (4 kcal/g)
@@ -265,6 +265,8 @@ export interface WeightObjectivePlan {
   paceKgPerWeek: number;
   weeksNeeded: number;
   daysNeeded: number;
+  requestedDaysNeeded: number;
+  dateWasAdjusted: boolean;
   projectedDate: string;
   dailyDeficitKcal: number; // positive = deficit (eat less), negative = surplus (eat more)
   targetCalories: number;
@@ -310,6 +312,8 @@ export function calculateWeightObjectivePlan(params: {
   let effectivePace = Math.max(0.1, paceKgPerWeek);
   let daysNeeded = 0;
   let weeksNeeded = 0;
+  let requestedDaysNeeded = 0;
+  let dateWasAdjusted = false;
   let dailyDeficitKcal = 0;
   let projectedDate = '';
 
@@ -319,12 +323,17 @@ export function calculateWeightObjectivePlan(params: {
     effectivePace = 0;
     daysNeeded = 0;
     weeksNeeded = 0;
+    requestedDaysNeeded = 0;
+    dateWasAdjusted = false;
     dailyDeficitKcal = 0;
     projectedDate = today.toISOString().split('T')[0];
   } else if (mode === 'target_date' && targetDate) {
     const targetDt = new Date(targetDate + 'T12:00:00');
     const diffTime = targetDt.getTime() - today.getTime();
-    const diffDays = Math.max(7, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+    const rawDiffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    requestedDaysNeeded = rawDiffDays;
+    dateWasAdjusted = rawDiffDays < 7;
+    const diffDays = Math.max(7, rawDiffDays);
 
     daysNeeded = diffDays;
     weeksNeeded = Math.round((diffDays / 7) * 10) / 10;
@@ -341,6 +350,8 @@ export function calculateWeightObjectivePlan(params: {
     effectivePace = Math.max(0.1, Math.min(2.0, paceKgPerWeek));
     weeksNeeded = Math.round((Math.abs(deltaKg) / effectivePace) * 10) / 10;
     daysNeeded = Math.round(weeksNeeded * 7);
+    requestedDaysNeeded = daysNeeded;
+    dateWasAdjusted = false;
 
     if (isLoss) {
       dailyDeficitKcal = Math.round((effectivePace * KCAL_PER_KG_FAT) / 7);
@@ -395,9 +406,9 @@ export function calculateWeightObjectivePlan(params: {
   let carbsG = 0;
 
   if (direction === 'loss') {
-    // High protein during deficit: 2.2g per kg of body mass to spare muscle
+    // High protein during deficit: 2.2g (or 1.8g) per kg bodyweight floor to spare muscle
     const proteinRatio = highProteinPreservation ? 2.2 : 1.8;
-    proteinG = Math.round(Math.min(targetCalories * 0.4 / 4, currentWeightKg * proteinRatio));
+    proteinG = Math.round(Math.max(currentWeightKg * proteinRatio, (targetCalories * 0.35) / 4));
     // Healthy fats: 25% of target calories for hormone synthesis
     const fatCalories = targetCalories * 0.25;
     fatG = Math.round(fatCalories / 9);
@@ -405,8 +416,8 @@ export function calculateWeightObjectivePlan(params: {
     const remainingCalories = Math.max(0, targetCalories - (proteinG * 4 + fatG * 9));
     carbsG = Math.round(remainingCalories / 4);
   } else if (direction === 'gain') {
-    // Lean bulk: 2.0g protein / kg, 25% fat, rest to high carbs for anabolism
-    proteinG = Math.round(Math.min(targetCalories * 0.3 / 4, currentWeightKg * 2.0));
+    // Lean bulk: at least 2.0g protein / kg bodyweight floor, 25% fat, rest to high carbs for anabolism
+    proteinG = Math.round(Math.max(currentWeightKg * 2.0, (targetCalories * 0.3) / 4));
     fatG = Math.round((targetCalories * 0.25) / 9);
     carbsG = Math.round(Math.max(0, targetCalories - (proteinG * 4 + fatG * 9)) / 4);
   } else {
@@ -428,6 +439,8 @@ export function calculateWeightObjectivePlan(params: {
     paceKgPerWeek: effectivePace,
     weeksNeeded,
     daysNeeded,
+    requestedDaysNeeded,
+    dateWasAdjusted,
     projectedDate,
     dailyDeficitKcal,
     targetCalories,

@@ -13,6 +13,7 @@ import {
   Flame,
   Dumbbell,
   Apple,
+  AlertTriangle,
 } from 'lucide-react';
 import { DailySummary, MacroGoals, UserProfile } from '../types/nutrition';
 import { playSuccessChime, triggerHaptic } from '../services/audioFeedback';
@@ -109,7 +110,7 @@ How can I help you optimize your meals, hit your macros, or formulate recipes to
 
       const data = await response.json();
       if (data.success && data.answer) {
-        setMessages((prev) => [...prev, { role: 'assistant', text: data.answer }]);
+        setMessages((prev) => [...prev, { role: 'assistant', text: data.answer, isFallback: Boolean(data.isFallback) }]);
         playSuccessChime();
         triggerHaptic('success');
       } else {
@@ -137,7 +138,7 @@ How can I help you optimize your meals, hit your macros, or formulate recipes to
         },
       });
 
-      setMessages((prev) => [...prev, { role: 'assistant', text: fallbackReply }]);
+      setMessages((prev) => [...prev, { role: 'assistant', text: fallbackReply, isFallback: true }]);
       playSuccessChime();
     } finally {
       setIsLoading(false);
@@ -216,6 +217,13 @@ How can I help you optimize your meals, hit your macros, or formulate recipes to
                     : 'bg-slate-800/90 border border-slate-700/80 text-slate-200 rounded-tl-xs shadow-sm'
                 }`}
               >
+                {m.role === 'assistant' && m.isFallback && (
+                  <div className="flex items-center gap-1.5 mb-2.5 px-2.5 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[11px] font-semibold">
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span>⚠️ Offline response — couldn't reach live AI, here's a general answer</span>
+                  </div>
+                )}
+
                 {m.text}
 
                 {m.role === 'assistant' && (

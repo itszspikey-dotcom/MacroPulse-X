@@ -470,6 +470,18 @@ export const WeightObjectiveModal: React.FC<WeightObjectiveModalProps> = ({
                   The algorithm calculates the required daily caloric deficit to hit exactly{' '}
                   {unitSystem === 'kg' ? targetWeightKg : toLbs(targetWeightKg)} {unitSystem} by {targetDate}.
                 </p>
+
+                {plan.dateWasAdjusted && (
+                  <div className="flex items-start gap-2.5 p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs mt-2">
+                    <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400 mt-0.5" />
+                    <div>
+                      <div className="font-bold text-amber-200">Target Date Adjusted</div>
+                      <div className="text-[11px] text-amber-200/80 mt-0.5 leading-relaxed">
+                        Your target date was too soon — showing a realistic 7-day minimum plan instead.
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

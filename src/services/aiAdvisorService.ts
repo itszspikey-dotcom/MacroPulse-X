@@ -3,6 +3,7 @@ import { DailySummary, MacroGoals, UserProfile } from '../types/nutrition';
 export interface ChatMessage {
   role: 'user' | 'assistant';
   text: string;
+  isFallback?: boolean;
 }
 
 export interface AdvisorContext {

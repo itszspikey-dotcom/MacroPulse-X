@@ -291,23 +291,22 @@ Current User Profile & Goal:
 - Daily Fiber Target: ${macroGoals?.fiber || 28}g (Consumed: ${dailySummary?.fiber || 0}g)
 
 Guidelines:
-1. Always address the user's specific question directly with varied, actionable food options, realistic portion weights in grams, and exact calculated macros.
+1. Always address the user's specific question directly with varied, actionable food options, realistic portion weights in grams, and exact calculated macros. If the user's question has multiple parts, address every part — don't answer only the first topic you recognize and ignore the rest.
 2. Structure answers with clean markdown headings (###, ####), bullet points, and highlight calories & macros in bold.
 3. Be conversational, motivating, and dynamic across multiple questions without repeating identical canned responses.`;
 
-    // Construct multi-turn contents if history is provided
+    // Construct multi-turn contents directly from history (history already contains latest user query)
     let contentsPayload: any = [];
     if (Array.isArray(history) && history.length > 0) {
       contentsPayload = history.slice(-6).map((msg: any) => ({
         role: msg.role === 'assistant' ? 'model' : 'user',
         parts: [{ text: msg.text }],
       }));
-      contentsPayload.push({
-        role: 'user',
-        parts: [{ text: query }],
-      });
     } else {
-      contentsPayload = `User Question: "${query}"`;
+      contentsPayload = [{
+        role: 'user',
+        parts: [{ text: query || 'Hello' }],
+      }];
     }
 
     const response = await ai.models.generateContent({
@@ -320,7 +319,7 @@ Guidelines:
 
     const answer = response.text;
     if (answer && answer.trim().length > 0) {
-      return res.json({ success: true, answer });
+      return res.json({ success: true, answer, isFallback: false });
     }
 
     throw new Error('Empty response from model');

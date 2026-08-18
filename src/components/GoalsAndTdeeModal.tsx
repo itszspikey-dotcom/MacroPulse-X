@@ -17,6 +17,7 @@ import {
   ArrowUpDown,
   FileJson,
   QrCode,
+  AlertTriangle,
 } from 'lucide-react';
 import { UserProfile } from '../types/nutrition';
 import {
@@ -121,13 +122,25 @@ export const GoalsAndTdeeModal: React.FC<GoalsAndTdeeModalProps> = ({
       })
     : null;
 
+  // Single unified recommended macro plan: driven by weightObjective if active, else rec
+  const activeRecommended = objectivePlan
+    ? {
+        targetCalories: objectivePlan.targetCalories,
+        targetProteinG: objectivePlan.macros.proteinG,
+        targetCarbsG: objectivePlan.macros.carbsG,
+        targetFatG: objectivePlan.macros.fatG,
+        targetFiberG: objectivePlan.macros.fiberG,
+        targetWaterMl: objectivePlan.macros.waterMl,
+      }
+    : rec;
+
   const handleApplyRecommended = () => {
-    setTargetCalories(rec.targetCalories);
-    setTargetProteinG(rec.targetProteinG);
-    setTargetCarbsG(rec.targetCarbsG);
-    setTargetFatG(rec.targetFatG);
-    setTargetFiberG(rec.targetFiberG);
-    setTargetWaterMl(rec.targetWaterMl);
+    setTargetCalories(activeRecommended.targetCalories);
+    setTargetProteinG(activeRecommended.targetProteinG);
+    setTargetCarbsG(activeRecommended.targetCarbsG);
+    setTargetFatG(activeRecommended.targetFatG);
+    setTargetFiberG(activeRecommended.targetFiberG);
+    setTargetWaterMl(activeRecommended.targetWaterMl);
     triggerHaptic('light');
   };
 
@@ -135,12 +148,12 @@ export const GoalsAndTdeeModal: React.FC<GoalsAndTdeeModalProps> = ({
     const finalAge = typeof age === 'number' ? age : parseInt(age, 10) || userProfile.age || 25;
     const finalHeight = typeof heightCm === 'number' ? heightCm : parseFloat(heightCm) || userProfile.heightCm || 175;
     const finalWeight = typeof weightKg === 'number' ? weightKg : parseFloat(weightKg) || userProfile.weightKg || 70;
-    const finalCalories = typeof targetCalories === 'number' ? targetCalories : parseInt(targetCalories, 10) || rec.targetCalories;
-    const finalProtein = typeof targetProteinG === 'number' ? targetProteinG : parseFloat(targetProteinG) || rec.targetProteinG;
-    const finalCarbs = typeof targetCarbsG === 'number' ? targetCarbsG : parseFloat(targetCarbsG) || rec.targetCarbsG;
-    const finalFat = typeof targetFatG === 'number' ? targetFatG : parseFloat(targetFatG) || rec.targetFatG;
-    const finalFiber = typeof targetFiberG === 'number' ? targetFiberG : parseFloat(targetFiberG) || rec.targetFiberG;
-    const finalWater = typeof targetWaterMl === 'number' ? targetWaterMl : parseInt(targetWaterMl, 10) || rec.targetWaterMl;
+    const finalCalories = typeof targetCalories === 'number' ? targetCalories : parseInt(targetCalories, 10) || activeRecommended.targetCalories;
+    const finalProtein = typeof targetProteinG === 'number' ? targetProteinG : parseFloat(targetProteinG) || activeRecommended.targetProteinG;
+    const finalCarbs = typeof targetCarbsG === 'number' ? targetCarbsG : parseFloat(targetCarbsG) || activeRecommended.targetCarbsG;
+    const finalFat = typeof targetFatG === 'number' ? targetFatG : parseFloat(targetFatG) || activeRecommended.targetFatG;
+    const finalFiber = typeof targetFiberG === 'number' ? targetFiberG : parseFloat(targetFiberG) || activeRecommended.targetFiberG;
+    const finalWater = typeof targetWaterMl === 'number' ? targetWaterMl : parseInt(targetWaterMl, 10) || activeRecommended.targetWaterMl;
 
     onSaveProfile({
       name: name.trim() || userProfile.name,
@@ -500,37 +513,48 @@ export const GoalsAndTdeeModal: React.FC<GoalsAndTdeeModalProps> = ({
             </div>
 
             {objectivePlan && (
-              <div className="grid grid-cols-3 gap-2 pt-1 border-t border-white/10 text-center">
-                <div className="bg-slate-900/70 rounded-lg p-1.5">
-                  <div className="text-[9px] text-slate-400 uppercase font-mono-meta">Delta</div>
-                  <div className="text-xs font-bold text-white">
-                    {objectivePlan.direction === 'loss'
-                      ? `-${objectivePlan.deltaKg} kg`
-                      : objectivePlan.direction === 'gain'
-                      ? `+${objectivePlan.deltaKg} kg`
-                      : '0 kg'}
+              <>
+                <div className="grid grid-cols-3 gap-2 pt-1 border-t border-white/10 text-center">
+                  <div className="bg-slate-900/70 rounded-lg p-1.5">
+                    <div className="text-[9px] text-slate-400 uppercase font-mono-meta">Delta</div>
+                    <div className="text-xs font-bold text-white">
+                      {objectivePlan.direction === 'loss'
+                        ? `-${objectivePlan.deltaKg} kg`
+                        : objectivePlan.direction === 'gain'
+                        ? `+${objectivePlan.deltaKg} kg`
+                        : '0 kg'}
+                    </div>
+                  </div>
+                  <div className="bg-slate-900/70 rounded-lg p-1.5">
+                    <div className="text-[9px] text-slate-400 uppercase font-mono-meta">Daily Deficit</div>
+                    <div className="text-xs font-bold text-[#facc15]">
+                      {objectivePlan.dailyDeficitKcal > 0
+                        ? `-${objectivePlan.dailyDeficitKcal} kcal`
+                        : objectivePlan.dailyDeficitKcal < 0
+                        ? `+${Math.abs(objectivePlan.dailyDeficitKcal)} kcal`
+                        : '0 kcal'}
+                    </div>
+                  </div>
+                  <div className="bg-slate-900/70 rounded-lg p-1.5">
+                    <div className="text-[9px] text-slate-400 uppercase font-mono-meta">Target Date</div>
+                    <div className="text-xs font-bold text-sky-400">
+                      {new Date(objectivePlan.projectedDate + 'T12:00:00').toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </div>
                   </div>
                 </div>
-                <div className="bg-slate-900/70 rounded-lg p-1.5">
-                  <div className="text-[9px] text-slate-400 uppercase font-mono-meta">Daily Deficit</div>
-                  <div className="text-xs font-bold text-[#facc15]">
-                    {objectivePlan.dailyDeficitKcal > 0
-                      ? `-${objectivePlan.dailyDeficitKcal} kcal`
-                      : objectivePlan.dailyDeficitKcal < 0
-                      ? `+${Math.abs(objectivePlan.dailyDeficitKcal)} kcal`
-                      : '0 kcal'}
+
+                {objectivePlan.dateWasAdjusted && (
+                  <div className="flex items-start gap-2 p-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs">
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                    <div className="text-[11px] text-amber-200/90 leading-tight">
+                      Your target date was too soon — showing a realistic 7-day minimum plan instead.
+                    </div>
                   </div>
-                </div>
-                <div className="bg-slate-900/70 rounded-lg p-1.5">
-                  <div className="text-[9px] text-slate-400 uppercase font-mono-meta">Target Date</div>
-                  <div className="text-xs font-bold text-sky-400">
-                    {new Date(objectivePlan.projectedDate + 'T12:00:00').toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                    })}
-                  </div>
-                </div>
-              </div>
+                )}
+              </>
             )}
           </div>
 
@@ -571,8 +595,10 @@ export const GoalsAndTdeeModal: React.FC<GoalsAndTdeeModalProps> = ({
               <div className="text-xs text-slate-400">TDEE: <strong className="text-white">{tdee} kcal/day</strong></div>
             </div>
             <div className="text-right">
-              <div className="text-xs text-emerald-400 font-bold">Recommended Target</div>
-              <div className="text-lg font-black text-white">{rec.targetCalories} kcal</div>
+              <div className="text-xs text-emerald-400 font-bold">
+                {objectivePlan ? 'Objective Target' : 'Recommended Target'}
+              </div>
+              <div className="text-lg font-black text-white">{activeRecommended.targetCalories} kcal</div>
             </div>
           </div>
 
